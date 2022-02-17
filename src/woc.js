@@ -15,8 +15,9 @@ const WebSocket = require("ws");
 // Globals
 // ------------------------------------------------------------------------------------------------
 
-const LOU_FILTER = "034c6f554d"
-const RUN_0_6_FILTER = "006a0372756e0105" + LOU_FILTER;
+const RUN_0_6_FILTER = "006a0372756e0105";
+const LOU_FILTER = RUN_0_6_FILTER + "034c6f554d";
+const RUN_FILTER = RUN_0_6_FILTER + "0d52756";
 
 // ------------------------------------------------------------------------------------------------
 // WoC
@@ -51,6 +52,7 @@ class WoC {
 
 	async getNextBlock(currHeight, currHash) {
 		const height = currHeight + 1;
+		console.log("Begin block crawl " + height);
 		let res,
 			txs = [];
 		try {
@@ -93,10 +95,10 @@ class WoC {
 					txids.push(txs[x]);
 					x++;
 				}
-				const h = await axios.post("https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex", { txids }, this.config);
+				const h = await axios.post(`https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex`, { txids }, this.config);
 				if (h.data) {
 					h.data.forEach(t => {
-						if (t.hex.includes(RUN_0_6_FILTER)) {
+						if (t.hex.includes(LOU_FILTER) || t.hex.includes(RUN_FILTER)) {
 							transactions.push(t);
 						}
 					});
@@ -107,10 +109,10 @@ class WoC {
 				txids.push(txs[k]);
 			}
 			if (txids.length) {
-				const h = await axios.post("https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex", { txids }, this.config);
+				const h = await axios.post(`https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex`, { txids }, this.config);
 				if (h.data) {
 					h.data.forEach(t => {
-						if (t.hex.includes(RUN_0_6_FILTER)) {
+						if (t.hex.includes(LOU_FILTER) || t.hex.includes(RUN_FILTER)) {
 							transactions.push(t);
 						}
 					});
@@ -120,6 +122,7 @@ class WoC {
 			const txhexs = transactions.map(t => t.hex);
 			return { height, hash, time, txids, txhexs };
 		} catch (e) {
+			console.log(e);
 			if (e.response && e.response.status === 404) return undefined;
 			throw e;
 		}
@@ -129,12 +132,9 @@ class WoC {
 		this.logger.info("Listening for mempool via WoC SSE");
 
 		return new Promise((resolve, reject) => {
-			this.mempoolEvents = new Centrifuge(
-				`wss://socket${this.network === "test" ? "-testnet" : ""}.whatsonchain.com/mempool`,
-				{
-					websocket: WebSocket
-				}
-			);
+			this.mempoolEvents = new Centrifuge(`wss://socket${this.network === "test" ? "-testnet" : ""}.whatsonchain.com/mempool`, {
+				websocket: WebSocket
+			});
 
 			this.mempoolEvents.on("connect", ctx => {
 				console.log("Connected with client ID " + ctx.client + " over " + ctx.transport);
@@ -151,7 +151,7 @@ class WoC {
 
 			this.mempoolEvents.on("publish", message => {
 				const hex = message.data.hex;
-				if (hex.includes(RUN_0_6_FILTER)) {
+				if (hex.includes(RUN_0_6_FILTER + LOU_FILTER)) {
 					mempoolTxCallback(message.data.hash, hex);
 				}
 			});

@@ -8,12 +8,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY . .
-
 ARG DB
 ENV DB=/volume/run.db
 ENV PORT=8000
 VOLUME [ "/volume" ]
-
 EXPOSE 8000
+
+COPY . .
+
 CMD [ "sh", "start.sh" ]
