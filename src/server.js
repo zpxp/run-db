@@ -68,6 +68,7 @@ class Server {
 		app.post("/trust/:txid?", this.postTrust.bind(this));
 		app.post("/ban/:txid", this.postBan.bind(this));
 		app.post("/tx", this.postTx.bind(this));
+		app.post("/txfromtrust", this.postTxFromTrustList.bind(this));
 		app.post("/tx/:txid", this.postTx.bind(this)); // Keeping this for retro compatibility.
 
 		app.delete("/trust/:txid", this.deleteTrust.bind(this));
@@ -260,11 +261,30 @@ class Server {
 			if (typeof req.body !== "string") {
 				throw new Error("missing rawtx");
 			}
-			const hex = req.body.replace(/\s+/g, "");
-			const bsvtx = new bsv.Transaction(hex);
+			const txid = req.originalUrl.replace("/tx/", "");
+			// const hex = req.body.replace(/\s+/g, "");
+			// const bsvtx = new bsv.Transaction(hex);
 
-			this.database.addTransaction(bsvtx.hash, hex);
-			res.send(`Added ${bsvtx.hash}\n`);
+			this.database.addTransaction(txid, null);
+			res.send(`Added ${txid}\n`);
+		} catch (e) {
+			next(e);
+		}
+	}
+
+	async postTxFromTrustList(req, res, next) {
+		try {
+			const trusts = this.database.getTrustlist();
+
+			for (const txid of trusts) {
+				this.database.addTransaction(txid, null);
+				res.send(`Added ${txid}\n`);
+				await new Promise(resolve => {
+					setTimeout(() => {
+						resolve();
+					}, 1000);
+				});
+			}
 		} catch (e) {
 			next(e);
 		}

@@ -38,6 +38,34 @@ const IS_READY_TO_EXECUTE_SQL = `
       WHERE txid = ?
     `
 
+const IS_READY_TO_EXECUTE_SQL = `
+      SELECT (
+        downloaded = 1
+        AND executable = 1
+        AND executed = 0
+        AND (has_code = 0 OR (SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) = 1)
+        AND txid NOT IN ban
+        AND (
+          SELECT COUNT(*)
+          FROM tx AS tx2
+          JOIN deps
+          ON deps.up = tx2.txid
+          WHERE deps.down = tx.txid
+          AND (+tx2.downloaded = 0 OR (tx2.executable = 1 AND tx2.executed = 0))
+        ) = 0
+      ) AS ready 
+      FROM tx
+      WHERE txid = ?
+    `
+
+const IS_TRUSTED = `
+	 SELECT (
+		(has_code = 1 AND (SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) = 1) AS trusted,
+		txid NOT IN ban AS noban
+	 FROM tx
+	 WHERE txid = ?
+  `
+
 const GET_DOWNSTREADM_READY_TO_EXECUTE_SQL = `
       SELECT down
       FROM deps
@@ -133,6 +161,7 @@ class Database {
     this.getTransactionsDownloadedCountStmt = this.db.prepare('SELECT COUNT(*) AS count FROM tx WHERE downloaded = 1')
     this.getTransactionsIndexedCountStmt = this.db.prepare('SELECT COUNT(*) AS count FROM tx WHERE indexed = 1')
     this.isReadyToExecuteStmt = this.db.prepare(IS_READY_TO_EXECUTE_SQL)
+    this.isTrustedOrBannedExecuteStmt = this.db.prepare(IS_TRUSTED)
     this.getDownstreamReadyToExecuteStmt = this.db.prepare(GET_DOWNSTREADM_READY_TO_EXECUTE_SQL)
 
     this.setSpendStmt = this.db.prepare('INSERT OR REPLACE INTO spends (location, spend_txid) VALUES (?, ?)')
@@ -144,6 +173,7 @@ class Database {
     this.addDepStmt = this.db.prepare('INSERT OR IGNORE INTO deps (up, down) VALUES (?, ?)')
     this.deleteDepsStmt = this.db.prepare('DELETE FROM deps WHERE down = ?')
     this.getDownstreamStmt = this.db.prepare('SELECT down FROM deps WHERE up = ?')
+    this.getUpstreamStmt = this.db.prepare('SELECT up FROM deps WHERE down = ?')
     this.getUpstreamUnexecutedCodeStmt = this.db.prepare(`
       SELECT txdeps.txid as txid
       FROM (SELECT up AS txid FROM deps WHERE down = ?) as txdeps
@@ -156,6 +186,7 @@ class Database {
     this.setJigLockStmt = this.db.prepare('UPDATE jig SET lock = ? WHERE location = ?')
     this.setJigScripthashStmt = this.db.prepare('UPDATE jig SET scripthash = ? WHERE location = ?')
     this.getJigStateStmt = this.db.prepare('SELECT state FROM jig WHERE location = ?')
+    this.getJigStateStmtAll = this.db.prepare('SELECT * FROM jig ')
     this.deleteJigStatesStmt = this.db.prepare('DELETE FROM jig WHERE location LIKE ? || \'%\'')
 
     const getAllUnspentSql = `
@@ -963,7 +994,10 @@ class Database {
     if (row && row.ready) {
       this.markExecutingStmt.run(txid)
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
-    }
+    } else {
+		const row = this.isTrustedOrBannedExecuteStmt.get(txid)
+		this.logger.warn(`Banned: ${row.noban} Trusted: ${row.trusted} TX: ${txid}`)
+	 }
   }
 }
 

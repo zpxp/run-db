@@ -4,6 +4,8 @@
  * Downloads transactions
  */
 
+const { DEFAULT_TRUSTLIST } = require("./config")
+
 // ------------------------------------------------------------------------------------------------
 // Downloader
 // ------------------------------------------------------------------------------------------------
@@ -69,7 +71,9 @@ class Downloader {
 
       this._onFetchSucceed(txid, hex, height, time)
     } catch (e) {
-      this._onFetchFailed(txid, e)
+		if(!DEFAULT_TRUSTLIST.includes(txid)){
+			 this._onFetchFailed(txid, e)
+		}
     } finally {
       this._fetchNextInQueue()
     }

@@ -18,7 +18,7 @@ const DB = process.env.DB || 'run.db'
 const PORT = typeof process.env.PORT !== 'undefined' ? parseInt(process.env.PORT) : 0
 const WORKERS = typeof process.env.WORKERS !== 'undefined' ? parseInt(process.env.WORKERS) : 4
 const FETCH_LIMIT = typeof process.env.FETCH_LIMIT !== 'undefined' ? parseInt(process.env.FETCH_LIMIT) : 20
-const START_HEIGHT = process.env.START_HEIGHT || (NETWORK === 'test' ? 1385873 : 650000)
+const START_HEIGHT = process.env.START_HEIGHT || (NETWORK === 'test' ? 1446730 : 650000)
 const TIMEOUT = typeof process.env.TIMEOUT !== 'undefined' ? parseInt(process.env.TIMEOUT) : 10000
 const MEMPOOL_EXPIRATION = typeof process.env.MEMPOOL_EXPIRATION !== 'undefined' ? parseInt(process.env.MEMPOOL_EXPIRATION) : 60 * 60 * 24
 const ZMQ_URL = process.env.ZMQ_URL || null
@@ -88,6 +88,7 @@ const DEFAULT_TRUSTLIST = ENV_VAR_DEFAULT_TRUSTLIST || [
   '7d14c868fe39439edffe6982b669e7b4d3eb2729eee7c262ec2494ee3e310e99', // Token (v2)
   '33e78fa7c43b6d7a60c271d783295fa180b7e9fce07d41ff1b52686936b3e6ae', // Tx, txo
   'd476fd7309a0eeb8b92d715e35c6e273ad63c0025ff6cca927bd0f0b64ed88ff', // Tx, txo, B (v2)
+  'ef15f20e311f9b34d016c7e82cc797763265b044a2e3005f6803941954608fda',
 
   /**
    * Other
@@ -95,7 +96,9 @@ const DEFAULT_TRUSTLIST = ENV_VAR_DEFAULT_TRUSTLIST || [
   '24cde3638a444c8ad397536127833878ffdfe1b04d5595489bd294e50d77105a', // B (old)
   'bfa5180e601e92af23d80782bf625b102ac110105a392e376fe7607e4e87dc8d', // Class with logo
   'c0a79e8afb7cabe5f25bdaa398683d6dfe68a2912b29fe948ed130d14e3a2380', // TimeLock
-  '3f9de452f0c3c96be737d42aa0941b27412211976688967adb3174ee18b04c64' // Tutorial jigs
+  '3f9de452f0c3c96be737d42aa0941b27412211976688967adb3174ee18b04c64', // Tutorial jigs
+
+  '069f8223662e1aace9691a56f9e1d614995709ad91a7ed7d3e532c46b3607588' // jigs
 ]
 
 // ------------------------------------------------------------------------------------------------
