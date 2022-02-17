@@ -32,6 +32,7 @@
   "dependencies": {
     "abort-controller": "^3.0.0",
     "axios": "^0.21.1",
+    "axios-rate-limit": "^1.3.0",
     "better-sqlite3": "^7.4.1",
     "body-parser": "^1.19.0",
     "centrifuge": "^2.8.4",

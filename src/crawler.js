@@ -88,6 +88,8 @@ class Crawler {
 
     const block = this.api.getNextBlock && await this.api.getNextBlock(currHeight, currHash)
 
+	 if(block === false) return;
+
     // Case: shutting down
     if (!this.started) return
 

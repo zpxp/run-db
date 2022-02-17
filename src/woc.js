@@ -10,6 +10,9 @@ global.EventSource = require("eventsource");
 const { default: ReconnectingEventSource } = require("reconnecting-eventsource");
 const Centrifuge = require("centrifuge");
 const WebSocket = require("ws");
+const rateLimit = require("axios-rate-limit");
+
+const http = rateLimit(axios.create(), { maxRPS: 3 });
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -42,8 +45,8 @@ class WoC {
 	}
 
 	async fetch(txid) {
-		const response = await axios.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/tx/${txid}/hex`, this.config);
-		const detail = await axios.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/tx/hash/${txid}`, this.config);
+		const response = await http.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/tx/${txid}/hex`, this.config);
+		const detail = await http.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/tx/hash/${txid}`, this.config);
 		const hex = response.data;
 		const height = detail.data.blockheight === 0 ? -1 : detail.data.blockheight;
 		const time = detail.data.blocktime === 0 ? null : detail.data.blocktime;
@@ -52,12 +55,17 @@ class WoC {
 
 	async getNextBlock(currHeight, currHash) {
 		const height = currHeight + 1;
+		if (height <= this.height) {
+			// already query
+			return false;
+		}
 		console.log("Begin block crawl " + height);
+		this.height = height;
 		let res,
 			txs = [];
 		try {
 			if (height) {
-				res = await axios.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/block/height/${height}`, this.config);
+				res = await http.get(`https://api.whatsonchain.com/v1/bsv/${this.network}/block/height/${height}`, this.config);
 			}
 			const hash = res.data.hash;
 			if (!hash) {
@@ -72,52 +80,34 @@ class WoC {
 				});
 			}
 			if (res.data.pages) {
-				for (let page of res.data.pages.uri) {
-					const nes = await axios.get(
-						`https://api.whatsonchain.com/v1/bsv/${this.network}${page}`,
-						this.config
-					);
-					if (nes.data) {
-						nes.data.forEach(tx => {
-							txs.push(tx);
-						});
-					}
-				}
+				await Promise.all(
+					res.data.pages.uri.map(async page => {
+						const nes = await http.get(`https://api.whatsonchain.com/v1/bsv/${this.network}${page}`, this.config);
+						if (nes.data) {
+							nes.data.forEach(tx => {
+								txs.push(tx);
+							});
+						}
+					})
+				);
 			}
 			let txids = [],
-				transactions = [],
-				x = 0;
-			const mod = txs.length % 20;
-			const looptimes = parseInt(txs.length / 20);
-			for (let i = 0; i < looptimes; i++) {
-				txids = [];
-				for (let j = 0; j < 20; j++) {
-					txids.push(txs[x]);
-					x++;
-				}
-				const h = await axios.post(`https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex`, { txids }, this.config);
-				if (h.data) {
-					h.data.forEach(t => {
-						if (t.hex.includes(LOU_FILTER) || t.hex.includes(RUN_FILTER)) {
-							transactions.push(t);
-						}
-					});
-				}
-			}
-			txids = [];
-			for (let k = txs.length - 1; k > txs.length - mod; k--) {
-				txids.push(txs[k]);
-			}
-			if (txids.length) {
-				const h = await axios.post(`https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex`, { txids }, this.config);
-				if (h.data) {
-					h.data.forEach(t => {
-						if (t.hex.includes(LOU_FILTER) || t.hex.includes(RUN_FILTER)) {
-							transactions.push(t);
-						}
-					});
-				}
-			}
+				transactions = [];
+
+			const chunked = chunk(txs, 20);
+			await Promise.all(
+				chunked.map(async txids => {
+					const h = await http.post(`https://api.whatsonchain.com/v1/bsv/${this.network}/txs/hex`, { txids }, this.config);
+					if (h.data) {
+						h.data.forEach(t => {
+							if (t.hex.includes(LOU_FILTER) || t.hex.includes(RUN_FILTER)) {
+								transactions.push(t);
+							}
+						});
+					}
+				})
+			);
+
 			txids = transactions.map(t => t.txid);
 			const txhexs = transactions.map(t => t.hex);
 			return { height, hash, time, txids, txhexs };
@@ -163,3 +153,15 @@ class WoC {
 // ------------------------------------------------------------------------------------------------
 
 module.exports = WoC;
+
+function chunk(arr, chunk) {
+	let i,
+		j,
+		temporary,
+		rtn = [];
+	for (i = 0, j = arr.length; i < j; i += chunk) {
+		temporary = arr.slice(i, i + chunk);
+		rtn.push(temporary);
+	}
+	return rtn;
+}
