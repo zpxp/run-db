@@ -40,9 +40,9 @@ const IS_READY_TO_EXECUTE_SQL = `
 
 
 const IS_TRUSTED = `
-	 SELECT (
+	 SELECT 
 		(has_code = 1 AND (SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) = 1) AS trusted,
-		txid NOT IN ban AS noban
+		(txid NOT IN ban) AS noban
 	 FROM tx
 	 WHERE txid = ?
   `
@@ -975,7 +975,7 @@ class Database {
     if (row && row.ready) {
       this.markExecutingStmt.run(txid)
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
-    } else {
+    } else if(row) {
 		const row = this.isTrustedOrBannedExecuteStmt.get(txid)
 		this.logger.warn(`Banned: ${row.noban} Trusted: ${row.trusted} TX: ${txid}`)
 	 }
