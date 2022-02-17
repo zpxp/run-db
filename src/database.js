@@ -977,7 +977,7 @@ class Database {
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
     } else if(row) {
 		const row = this.isTrustedOrBannedExecuteStmt.get(txid)
-		this.logger.warn(`Banned: ${row.noban} Trusted: ${row.trusted} TX: ${txid}`)
+		this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} TX: ${txid}`)
 	 }
   }
 }
