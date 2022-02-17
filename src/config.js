@@ -18,7 +18,7 @@ const DB = process.env.DB || 'run.db'
 const PORT = typeof process.env.PORT !== 'undefined' ? parseInt(process.env.PORT) : 0
 const WORKERS = typeof process.env.WORKERS !== 'undefined' ? parseInt(process.env.WORKERS) : 4
 const FETCH_LIMIT = typeof process.env.FETCH_LIMIT !== 'undefined' ? parseInt(process.env.FETCH_LIMIT) : 20
-const START_HEIGHT = process.env.START_HEIGHT || (NETWORK === 'test' ? 1446730 : 650000)
+const START_HEIGHT = process.env.START_HEIGHT || (NETWORK === 'test' ? 1476734 : 650000)
 const TIMEOUT = typeof process.env.TIMEOUT !== 'undefined' ? parseInt(process.env.TIMEOUT) : 10000
 const MEMPOOL_EXPIRATION = typeof process.env.MEMPOOL_EXPIRATION !== 'undefined' ? parseInt(process.env.MEMPOOL_EXPIRATION) : 60 * 60 * 24
 const ZMQ_URL = process.env.ZMQ_URL || null
