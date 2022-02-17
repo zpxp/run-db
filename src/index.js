@@ -18,6 +18,8 @@ const BitcoinRpc = require('./bitcoin-rpc')
 const BitcoinZmq = require('./bitcoin-zmq')
 const Database = require('./database')
 const DirectServer = require('./direct-server')
+const WoC = require('./woc')
+
 
 // ------------------------------------------------------------------------------------------------
 // Globals
@@ -44,6 +46,7 @@ switch (API) {
     api = new BitcoinNodeConnection(new BitcoinZmq(ZMQ_URL), new BitcoinRpc(RPC_URL))
     break
   case 'run': api = new RunConnectFetcher(); break
+  case 'whatsonchain': api = new WoC(null, logger); break;
   case 'none': api = {}; break
   default: throw new Error(`Unknown API: ${API}`)
 }
