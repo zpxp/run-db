@@ -38,25 +38,6 @@ const IS_READY_TO_EXECUTE_SQL = `
       WHERE txid = ?
     `
 
-const IS_READY_TO_EXECUTE_SQL = `
-      SELECT (
-        downloaded = 1
-        AND executable = 1
-        AND executed = 0
-        AND (has_code = 0 OR (SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) = 1)
-        AND txid NOT IN ban
-        AND (
-          SELECT COUNT(*)
-          FROM tx AS tx2
-          JOIN deps
-          ON deps.up = tx2.txid
-          WHERE deps.down = tx.txid
-          AND (+tx2.downloaded = 0 OR (tx2.executable = 1 AND tx2.executed = 0))
-        ) = 0
-      ) AS ready 
-      FROM tx
-      WHERE txid = ?
-    `
 
 const IS_TRUSTED = `
 	 SELECT (
