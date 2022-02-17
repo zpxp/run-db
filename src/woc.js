@@ -74,7 +74,7 @@ class WoC {
 			if (res.data.pages) {
 				for (let page of res.data.pages.uri) {
 					const nes = await axios.get(
-						`https://api.whatsonchain.com/v1/bsv/${this.network}/block/hash/${hash}/page/${page}`,
+						`https://api.whatsonchain.com/v1/bsv/${this.network}${page}`,
 						this.config
 					);
 					if (nes.data) {
