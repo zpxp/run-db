@@ -71,7 +71,7 @@ class Downloader {
 
       this._onFetchSucceed(txid, hex, height, time)
     } catch (e) {
-		if(!DEFAULT_TRUSTLIST.includes(txid)){
+		if(!DEFAULT_TRUSTLIST.includes(txid) && txid.length === 64){
 			 this._onFetchFailed(txid, e)
 		}
     } finally {
