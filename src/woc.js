@@ -55,12 +55,7 @@ class WoC {
 
 	async getNextBlock(currHeight, currHash) {
 		const height = currHeight + 1;
-		if (height <= this.height) {
-			// already query
-			return false;
-		}
 		console.log("Begin block crawl " + height);
-		this.height = height;
 		let res,
 			txs = [];
 		try {
