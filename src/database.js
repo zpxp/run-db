@@ -508,7 +508,7 @@ class Database {
 
     const downloaded = this.isTransactionDownloaded(txid)
     if (downloaded) {
-		//  this._checkExecutability(txid);
+		 this._checkExecutability(txid);
 		 return
 	 }
 
@@ -907,7 +907,7 @@ class Database {
     trusted.forEach(txid => this._checkExecutability(txid))
 
     if (this.onTrustTransaction) trusted.forEach(txid => this.onTrustTransaction(txid))
-	//  this.addTransaction(txid)
+	 this.addTransaction(txid)
   }
 
   untrust (txid) {
