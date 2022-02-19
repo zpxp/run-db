@@ -58,6 +58,7 @@ class Server {
 		app.get("/jig/:location", this.getJig.bind(this));
 		app.get("/berry/:location", this.getBerry.bind(this));
 		app.get("/tx/:txid", this.getTx.bind(this));
+		app.get("/txinfo/:txid", this.getTxInfo.bind(this));
 		app.get("/time/:txid", this.getTime.bind(this));
 		app.get("/spends/:location", this.getSpends.bind(this));
 		app.get("/unspent", this.getUnspent.bind(this));
@@ -127,6 +128,20 @@ class Server {
 			const rawtx = this.database.getTransactionHex(txid);
 			if (rawtx) {
 				res.send(rawtx);
+			} else {
+				res.status(404).send(`Not found: ${req.params.txid}\n`);
+			}
+		} catch (e) {
+			next(e);
+		}
+	}
+
+	async getTxInfo(req, res, next) {
+		try {
+			const txid = this._parseTxid(req.params.txid);
+			const row = this.database.getTransactionInfo(txid);
+			if (row) {
+				res.send(row);
 			} else {
 				res.status(404).send(`Not found: ${req.params.txid}\n`);
 			}
@@ -258,9 +273,9 @@ class Server {
 
 	async postTx(req, res, next) {
 		try {
-			if (typeof req.body !== "string") {
-				throw new Error("missing rawtx");
-			}
+			// if (typeof req.body !== "string") {
+			// 	throw new Error("missing rawtx");
+			// }
 			const txid = req.originalUrl.replace("/tx/", "");
 			// const hex = req.body.replace(/\s+/g, "");
 			// const bsvtx = new bsv.Transaction(hex);

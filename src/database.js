@@ -41,7 +41,8 @@ const IS_READY_TO_EXECUTE_SQL = `
 
 const IS_TRUSTED = `
 	 SELECT 
-		(has_code = 1 AND (SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) = 1) AS trusted,
+	 has_code,
+		(SELECT COUNT(*) FROM trust WHERE trust.txid = tx.txid AND trust.value = 1) AS trusted,
 		(txid NOT IN ban) AS noban
 	 FROM tx
 	 WHERE txid = ?
@@ -128,6 +129,7 @@ class Database {
     this.setTransactionIndexedStmt = this.db.prepare('UPDATE tx SET indexed = ? WHERE txid = ?')
     this.hasTransactionStmt = this.db.prepare('SELECT txid FROM tx WHERE txid = ?')
     this.getTransactionHexStmt = this.db.prepare('SELECT LOWER(HEX(bytes)) AS hex FROM tx WHERE txid = ?')
+    this.getTransactionInfoStmt = this.db.prepare('SELECT * FROM tx WHERE txid = ?')
     this.getTransactionTimeStmt = this.db.prepare('SELECT time FROM tx WHERE txid = ?')
     this.getTransactionHeightStmt = this.db.prepare('SELECT height FROM tx WHERE txid = ?')
     this.getTransactionHasCodeStmt = this.db.prepare('SELECT has_code FROM tx WHERE txid = ?')
@@ -505,7 +507,10 @@ class Database {
     })
 
     const downloaded = this.isTransactionDownloaded(txid)
-    if (downloaded) return
+    if (downloaded) {
+		//  this._checkExecutability(txid);
+		 return
+	 }
 
     if (txhex) {
       this.parseAndStoreTransaction(txid, txhex)
@@ -705,6 +710,12 @@ class Database {
     return row && row[0]
   }
 
+
+  getTransactionInfo (txid) {
+	const row = this.getTransactionInfoStmt.raw(false).get(txid)
+	return row
+ }
+
   getTransactionTime (txid) {
     const row = this.getTransactionTimeStmt.raw(true).get(txid)
     return row && row[0]
@@ -896,6 +907,7 @@ class Database {
     trusted.forEach(txid => this._checkExecutability(txid))
 
     if (this.onTrustTransaction) trusted.forEach(txid => this.onTrustTransaction(txid))
+	//  this.addTransaction(txid)
   }
 
   untrust (txid) {
@@ -971,13 +983,23 @@ class Database {
   }
 
   _checkExecutability (txid) {
-    const row = this.isReadyToExecuteStmt.get(txid)
+    let row = this.isReadyToExecuteStmt.get(txid)
     if (row && row.ready) {
       this.markExecutingStmt.run(txid)
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
     } else if(row) {
-		const row = this.isTrustedOrBannedExecuteStmt.get(txid)
-		this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} TX: ${txid}`)
+
+		// load deps and exec
+		const upstream = this.getUpstreamStmt.raw(true).all(txid)
+		upstream.forEach(x => this._checkExecutability(x))
+		row = this.isReadyToExecuteStmt.get(txid)
+		if (row && row.ready) {
+			this.markExecutingStmt.run(txid)
+			if (this.onReadyToExecute) this.onReadyToExecute(txid)
+		} else if (row) {
+			const row = this.isTrustedOrBannedExecuteStmt.get(txid)
+			this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} Code: ${row.has_code} TX: ${txid}`)
+		}
 	 }
   }
 }

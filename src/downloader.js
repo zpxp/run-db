@@ -65,13 +65,14 @@ class Downloader {
 
   async _fetch (txid) {
     this.fetching.add(txid)
+	 console.log(`Downloading ${txid} (${this.queued.size} queued)`);
 
     try {
       const { hex, height, time } = await this.fetchFunction(txid)
 
       this._onFetchSucceed(txid, hex, height, time)
     } catch (e) {
-		if(!DEFAULT_TRUSTLIST.includes(txid) && txid.length === 64){
+		if(txid.length === 64){
 			 this._onFetchFailed(txid, e)
 		}
     } finally {
@@ -108,7 +109,11 @@ class Downloader {
   }
 
   _fetchNextInQueue () {
-    if (!this.queued.size) return
+    if (!this.queued.size) {
+		// check for more
+		this.searchForNewDownloads()
+		return
+	 }
 
     const txid = this.queued.keys().next().value
     this.queued.delete(txid)

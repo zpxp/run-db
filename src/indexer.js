@@ -48,6 +48,7 @@ class Indexer {
     this.downloader.onDownloadTransaction = this._onDownloadTransaction.bind(this)
     this.downloader.onFailedToDownloadTransaction = this._onFailedToDownloadTransaction.bind(this)
     this.downloader.onRetryingDownload = this._onRetryingDownload.bind(this)
+    this.downloader.searchForNewDownloads = this._searchForNewDownloads.bind(this)
     this.executor.onIndexed = this._onIndexed.bind(this)
     this.executor.onExecuteFailed = this._onExecuteFailed.bind(this)
     this.executor.onMissingDeps = this._onMissingDeps.bind(this)
@@ -69,7 +70,7 @@ class Indexer {
     if (this.api.connect) await this.api.connect(height, this.network)
 
     this.logger.debug('Loading transactions to download')
-    this.database.getTransactionsToDownload().forEach(txid => this.downloader.add(txid))
+	 this._searchForNewDownloads()
 
     this.crawler.start(height, hash)
   }
@@ -79,6 +80,10 @@ class Indexer {
     if (this.api.disconnect) await this.api.disconnect()
     this.downloader.stop()
     await this.executor.stop()
+  }
+
+  _searchForNewDownloads() {
+		this.database.getTransactionsToDownload().forEach(txid => this.downloader.add(txid))
   }
 
   _onDownloadTransaction (txid, hex, height, time) {
