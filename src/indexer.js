@@ -189,6 +189,7 @@ class Indexer {
   }
 
   _onMempoolTransaction (txid, hex) {
+	  console.log(`Tx from mempool ${txid}`);
     this.database.addTransaction(txid, hex, Database.HEIGHT_MEMPOOL, null)
   }
 

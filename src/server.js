@@ -276,11 +276,17 @@ class Server {
 			// if (typeof req.body !== "string") {
 			// 	throw new Error("missing rawtx");
 			// }
-			const txid = req.originalUrl.replace("/tx/", "");
-			// const hex = req.body.replace(/\s+/g, "");
-			// const bsvtx = new bsv.Transaction(hex);
+			let txid = req.originalUrl.replace(/\/tx\/?/, "");
+			const hex = req.body.trim().length ? req.body.replace(/\s+/g, "") : null;
+			if (!txid) {
+				const bsvtx = new bsv.Transaction(hex);
+				txid = bsvtx.hash;
+			}
+			if (!txid) {
+				throw new Error("No txid provided");
+			}
 
-			this.database.addTransaction(txid, null);
+			this.database.addTransaction(txid, hex);
 			res.send(`Added ${txid}\n`);
 		} catch (e) {
 			next(e);
