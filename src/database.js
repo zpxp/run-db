@@ -982,23 +982,26 @@ class Database {
     txids.forEach(txid => this._checkExecutability(txid))
   }
 
-  _checkExecutability (txid) {
+  _checkExecutability (txid, parents) {
     let row = this.isReadyToExecuteStmt.get(txid)
     if (row && row.ready) {
       this.markExecutingStmt.run(txid)
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
     } else if(row) {
 
-		// load deps and exec
-		const upstream = this.getUpstreamStmt.raw(true).all(txid)
-		upstream.forEach(x => this._checkExecutability(x))
-		row = this.isReadyToExecuteStmt.get(txid)
-		if (row && row.ready) {
-			this.markExecutingStmt.run(txid)
-			if (this.onReadyToExecute) this.onReadyToExecute(txid)
-		} else if (row) {
-			const row = this.isTrustedOrBannedExecuteStmt.get(txid)
-			this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} Code: ${row.has_code} TX: ${txid}`)
+		this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} Code: ${row.has_code} TX: ${txid}`);
+		if (parents) {
+			// load deps and exec
+			const upstream = this.getUpstreamStmt.raw(true).all(txid);
+			upstream.forEach(x => this._checkExecutability(x));
+			row = this.isReadyToExecuteStmt.get(txid);
+			if (row && row.ready) {
+				this.markExecutingStmt.run(txid);
+				if (this.onReadyToExecute) this.onReadyToExecute(txid);
+			} else if (row) {
+				const row = this.isTrustedOrBannedExecuteStmt.get(txid);
+				this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} Code: ${row.has_code} TX: ${txid}`);
+			}
 		}
 	 }
   }
