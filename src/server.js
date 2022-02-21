@@ -277,7 +277,7 @@ class Server {
 			// 	throw new Error("missing rawtx");
 			// }
 			let txid = req.originalUrl.replace(/\/tx\/?/, "");
-			const hex = req.body.trim().length ? req.body.replace(/\s+/g, "") : null;
+			const hex = typeof req.body === "string" && req.body.trim().length ? req.body.replace(/\s+/g, "") : null;
 			if (!txid) {
 				const bsvtx = new bsv.Transaction(hex);
 				txid = bsvtx.hash;
