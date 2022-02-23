@@ -508,7 +508,7 @@ class Database {
 
     const downloaded = this.isTransactionDownloaded(txid)
     if (downloaded) {
-		 this._checkExecutability(txid);
+		 this._checkExecutability(txid, true);
 		 return
 	 }
 
@@ -988,7 +988,7 @@ class Database {
       this.markExecutingStmt.run(txid)
       if (this.onReadyToExecute) this.onReadyToExecute(txid)
     } else if(row) {
-
+		row = this.isTrustedOrBannedExecuteStmt.get(txid);
 		this.logger.warn(`No Ban: ${row.noban} Trusted: ${row.trusted} Code: ${row.has_code} TX: ${txid}`);
 		if (parents) {
 			// load deps and exec
